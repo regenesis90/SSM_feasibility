@@ -249,7 +249,29 @@ def nearest_point(V_point_1, V_point_2, V_point_3, V_point_4, LV_point_1, LV_poi
     return point_n, V_point_n, LV_point_n, point_n2, V_point_n2, LV_point_n2
 
 
-def potential_conflict_type(LV_type, D_gap, point_n, point_n2, velocity_x, velocity_y, LV_velocity_x, LV_velocity_y, local_x, local_y, LV_local_x, LV_local_y, V_len, LV_len):
+def overlap(LV_type, point_n, point_n2, velocity_x, velocity_y, LV_velocity_x, LV_velocity_y, local_x, local_y, LV_local_x, LV_local_y, V_len, LV_len):
+    """두 차량 궤적의 Overlap 여부를 알려주는 함수
+    먼저 궤적이 Overlap이어야, 잠재적인 Conflict Type을 구할 수 있게 된다.
+    """
+    if pd.isna(velocity_x) == False and pd.isna(LV_velocity_x) == False and velocity_x != 0 and LV_velocity_x != 0: # LV가 존재하면
+
+        t_local_x = (-(LV_velocity_y / LV_velocity_x) * LV_local_x + LV_local_y - local_y + (velocity_y / velocity_x) * local_x) / ((velocity_y / velocity_x) - (LV_velocity_y / LV_velocity_x))
+        
+        if (LV_type == 'LV0') and (local_x <= (LV_local_x - 1/2*LV_len)): # 같은 차로의 뒤에 있는 경우 
+            return 'overlap'
+
+        else: 
+            if t_local_x > local_x: # 수렴 점이 local_x보다 큰 경우. 즉, 앞에 있는 경우
+                return 'overlap'
+
+            else:# 두 차량이 다른 차로에 있으면서, 궤적이 수렴하지 않는 경우
+             return None
+
+    else:
+        return None
+        
+
+def potential_conflict_type(LV_type, overlap, point_n, point_n2, velocity_x, velocity_y, LV_velocity_x, LV_velocity_y, local_x, local_y, LV_local_x, LV_local_y, V_len, V_wid, LV_len, LV_wid):
     """V와 LV의 가장 가까운 점 번호를 바탕으로, 상충유형을 판단하기
     point_n : V와 LV의 가장 가까운 점 번호. (V, LV)
     point_n2 : V와 LV의 두번째로 가까운 점 번호. (V, LV)
@@ -259,28 +281,26 @@ def potential_conflict_type(LV_type, D_gap, point_n, point_n2, velocity_x, veloc
     if pd.isna(velocity_x) == False and pd.isna(LV_velocity_x) == False and velocity_x != 0 and LV_velocity_x != 0:
     
         # 만약 차로가 같다면, 이는 Rear-end이다.
-        if LV_type == 'LV0' and ((local_x + 1/2* V_len) <= (LV_local_x - 1/2 * LV_len)):
-        
-        # ((abs(local_y - LV_local_y) <= (1/2 * V_width + 1/2 * LV_width)) 
-        #                          or ((abs(local_y - LV_local_y) >= (1/2 * V_width + 1/2 * LV_width)) and (LV_local_y >= local_y)) 
-        #                          or ((abs(local_y - LV_local_y) >= (1/2 * V_width + 1/2 * LV_width)) and (local_y >= LV_local_y))):
+        if LV_type == 'LV0' and ((local_x + 1/2* V_len) <= (LV_local_x - 1/2 * LV_len)) and ((abs(local_y - LV_local_y) <= (1/2 * V_wid + 1/2 * LV_wid))):
+                                 #or ((abs(local_y - LV_local_y) >= (1/2 * V_width + 1/2 * LV_width)) and (LV_local_y >= local_y)) 
+                                # or ((abs(local_y - LV_local_y) >= (1/2 * V_width + 1/2 * LV_width)) and (local_y >= LV_local_y))):
             return 'rear_end', None
 
         # 만약 차로가 다르다면, Rear-end 외에도 다른 경우가 있을 수 있다. 이 경우, "충돌 예상 시점(tcoll)"에서의 위치관계를 바탕으로 상충유형을 구분해야만 한다.
         else: 
             #(LV_type == 'LVL') or (LV_type == 'LVR'):
-            # Q. 먼저, "수렴 중인가"를 확인해야 한다. x 방향의 절대적 거리가 감소중에 있는가?
-            if D_gap < 0: # 수렴 중이라면, 잠재적인 상충이 존재하는 것이다. 이 경우 상충유형이 존재한다.
+            # Q. 먼저, "수렴 중인가"를 확인해야 한다. 두 차량의 궤적이 Overlap인가?
+            if overlap == 'overlap':
                 
                 if (pd.isna(point_n) == False) and (pd.isna(point_n2) == False):
-
+        
                     V = (point_n[0], point_n2[0]) # V의 가장 가까운 점번호, 두번쨰 가까운 점번호
                     LV = (point_n[1], point_n2[1]) # LV의 가장 가까운 점번호, 두번째 가까운 점번호
-
+        
                     # 두 차량 속도가 이루는 벡터로부터 이루는 각을 계산 : Side-swipe와 Angled를 구분할 목적
                     V_v = (velocity_x, velocity_y)
                     LV_v = (LV_velocity_x, LV_velocity_y)
-
+        
                     dist_V = math.sqrt(V_v[0]**2 + V_v[1]**2)
                     dist_LV = math.sqrt(LV_v[0]**2 + LV_v[1]**2)
                     
@@ -288,24 +308,24 @@ def potential_conflict_type(LV_type, D_gap, point_n, point_n2, velocity_x, veloc
                         cos_theta = 1 # 영벡터와 내적을 하면 1이 된다
                         
                     else: #dist_LV != 0:
-
+        
                         ip1 = V_v[0] * LV_v[0] + V_v[1] * LV_v[1] # 코사인의 분자
                         ip2 = dist_V * dist_LV # 코사인의 분모
-
+        
                         cos_theta = ip1/ip2 # 두 벡터가 이루는 각 theta의 코사인 값(이때 theta는 라디안 임)
-
+        
                     if cos_theta >= -1 and cos_theta <= 1:
                         pass
-
+        
                     elif cos_theta < -1:
                         cos_theta = -1
-
+        
                     elif cos_theta > 1:
                         cos_theta = 1
-
+        
                     else:
                         pass
-
+        
                     theta = math.acos(cos_theta) # 두 벡터가 이루는 각 theta의 라디안 값
                     
                     degX = math.degrees(theta) # theta의 육십분법 각. 도
@@ -315,43 +335,42 @@ def potential_conflict_type(LV_type, D_gap, point_n, point_n2, velocity_x, veloc
                         
                         if ((degX < 85) and (degX > 0)):
                             return 'side_swipe', degX #ip1, ip2, cos_theta, theta, degX, 'side_swipe'
-
+        
                         elif degX >= 85 and (degX < 180):
                             return 'angled', degX #ip1, ip2, cos_theta,theta, degX, 'angled'
-
+        
                         else:
                             return None, None
                             #globals()['debug'].append(['0', V, LV])
-
+        
                     
                     ## 전방과 전방일 경우
                     elif (V in [(1, 2), (2, 1), (1, 1), (2, 2)]) and (LV in [(1, 2), (2, 1), (1, 1), (2, 2)]):
                         
                         if ((degX < 85) and (degX > 0)):
                             return 'side_swipe', degX #ip1, ip2, cos_theta, theta, degX, 'side_swipe'
-
+        
                         elif degX >= 85 and (degX < 180):
                             return 'angled', degX #ip1, ip2, cos_theta,theta, degX, 'angled'
-
+        
                         else:
                             return None, None
                             #globals()['debug'].append(['*', V, LV])
                             
-
+        
                     else:
                         #globals()['debug'].append(['**', V, LV])
                         return 'rear_end', degX
-
+        
                 else:
                     #globals()['debug'].append(['***', V, LV])
                     return None, None
 
-            else: # if D_gap > 0 : 발산하는 경우. 이 경우 상충유형은 없다
+            else: # overlap == None. 발산하는 경우
                 return None, None
-    
+                
     else:
         return None, None
-    
 
 
 

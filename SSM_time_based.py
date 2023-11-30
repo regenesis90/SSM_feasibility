@@ -494,7 +494,34 @@ def TET(TTC, threshold, tmsec): # 보통 threshold = 3으로 지정한다.
     return TET
 
 
+def TIACT(ACT, potential_conflict_type, tmsec):
+    """
+    -- Threshold : potential_conflict_type에 따라 다양한 값을 사용 
+    """
 
+    if potential_conflict_type == 'rear_end':
+        threshold = 5.58
+
+    elif potential_conflict_type == 'side_swipe':
+        threshold = 4.31
+
+    elif potential_conflict_type == 'angled':
+        threshold = 0.47
+
+    else:
+        threshold = None
+    
+    if (pd.isna(ACT) == False) and (pd.isna(threshold) == False):
+        if (ACT >= 0) and (ACT <= threshold):
+            TIACT = (threshold - ACT) * tmsec
+        
+        else:
+            TIACT = 0
+    
+    else:
+        TIACT = None
+        
+    return TIACT
 
     
 
