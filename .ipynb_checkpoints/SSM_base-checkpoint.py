@@ -253,7 +253,7 @@ def overlap(LV_type, point_n, point_n2, velocity_x, velocity_y, LV_velocity_x, L
     """두 차량 궤적의 Overlap 여부를 알려주는 함수
     먼저 궤적이 Overlap이어야, 잠재적인 Conflict Type을 구할 수 있게 된다.
     """
-    if pd.isna(velocity_x) == False and pd.isna(LV_velocity_x) == False and velocity_x != 0 and LV_velocity_x != 0: # LV가 존재하면
+    if pd.isna(velocity_x) == False and pd.isna(LV_velocity_x) == False and velocity_x != 0 and LV_velocity_x != 0 and ((velocity_y / velocity_x) - (LV_velocity_y / LV_velocity_x)) != 0: # LV가 존재하면
 
         t_local_x = (-(LV_velocity_y / LV_velocity_x) * LV_local_x + LV_local_y - local_y + (velocity_y / velocity_x) * local_x) / ((velocity_y / velocity_x) - (LV_velocity_y / LV_velocity_x))
         
@@ -281,7 +281,7 @@ def potential_conflict_type(LV_type, overlap, point_n, point_n2, velocity_x, vel
     if pd.isna(velocity_x) == False and pd.isna(LV_velocity_x) == False and velocity_x != 0 and LV_velocity_x != 0:
     
         # 만약 차로가 같다면, 이는 Rear-end이다.
-        if LV_type == 'LV0' and ((local_x + 1/2* V_len) <= (LV_local_x - 1/2 * LV_len)) and ((abs(local_y - LV_local_y) <= (1/2 * V_wid + 1/2 * LV_wid))):
+        if LV_type == 'LV0' and ((local_x + 1/2* V_len) <= (LV_local_x - 1/2 * LV_len)): #and ((abs(local_y - LV_local_y) <= (1/2 * V_wid + 1/2 * LV_wid))):
                                  #or ((abs(local_y - LV_local_y) >= (1/2 * V_width + 1/2 * LV_width)) and (LV_local_y >= local_y)) 
                                 # or ((abs(local_y - LV_local_y) >= (1/2 * V_width + 1/2 * LV_width)) and (local_y >= LV_local_y))):
             return 'rear_end', None

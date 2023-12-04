@@ -188,7 +188,7 @@ def DRAC(potential_conflict_type, LV_type, local_x, LV_local_x, D_x, velocity_x,
 
             #if (abs(local_y - LV_local_y) <= (1/2 * V_wid + 1/2 * LV_wid)) or ((abs(local_y - LV_local_y) >= (1/2 * V_wid + 1/2 * LV_wid)) and (LV_local_y >= local_y) and (LV_velocity_y <= velocity_y)) or ((abs(local_y - LV_local_y) >= (1/2 * V_wid + 1/2 * LV_wid)) and (local_y >= LV_local_y) and (velocity_y <= LV_velocity_y)):
                 # 차로가 같을 경우, 또는 차로가 다를 때 두 차량의 벡터가 서로 수렴하는 경우
-
+            
             if LV_local_x >= local_x:
                 DRAC = ((v - LV_v)**2) / (2 * distance)
 
